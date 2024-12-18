@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+
+worker_ready() {
+    celery -A django_celery_example inspect ping
+}
+
+# Wait for workers to be available
+echo "Waiting for Celery workers to become available..."
+until output=$(worker_ready 2>&1); do
+  >&2 echo "Celery workers not available. Retrying in 1 second..."
+  >&2 echo "Last attempt output: $output"
+  sleep 1
+done
+
+>&2 echo "Celery workers are available."
+>&2 echo "Final output from worker check: $output"
+
+# Start Flower
+echo "Starting Flower..."
+celery -A django_celery_example \
+    --broker="${CELERY_BROKER}" \
+    flower
